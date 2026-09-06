@@ -256,7 +256,7 @@ impl<Scope: WorkScope> TimerState<Scope> {
     /// Creates a new timer. Users should call one of [`Node::create_timer`],
     /// [`Node::create_timer_repeating`], [`Node::create_timer_oneshot`], or
     /// [`Node::create_timer_inert`].
-    pub(crate) fn create<'a>(
+    pub(crate) fn create(
         period: Duration,
         clock: Clock,
         callback: AnyTimerCallback<Scope>,

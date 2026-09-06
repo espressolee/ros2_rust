@@ -11,7 +11,9 @@ pub trait RclPrimitive: Send + Sync {
     ///   primitives sent through a [`WorkerChannel`][2] by a [`Worker`][3] this must be
     ///   the same type as the `Worker`'s generic argument.
     ///
-    /// SAFETY: Make sure the type of the payload always matches what the primitive
+    /// # Safety
+    ///
+    /// Make sure the type of the payload always matches what the primitive
     /// expects to receive. For now we will return an error if there is a mismatch.
     /// In the future we may use `std::Any::downcast_mut_unchecked` once it
     /// stabilizes, which would give undefined behavior in a mismatch, making it

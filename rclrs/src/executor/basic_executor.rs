@@ -75,11 +75,7 @@ impl AllGuardConditions {
 
     fn push(&self, guard_condition: Weak<GuardCondition>) {
         let mut inner = self.inner.lock().unwrap();
-        if inner
-            .iter()
-            .find(|other| guard_condition.ptr_eq(other))
-            .is_some()
-        {
+        if inner.iter().any(|other| guard_condition.ptr_eq(other)) {
             // This guard condition is already known
             return;
         }
@@ -350,7 +346,7 @@ impl TaskSender {
             task_sender: self.task_sender.clone(),
         });
 
-        if let Err(_) = self.task_sender.send(task) {
+        if self.task_sender.send(task).is_err() {
             // This is a debug log because it is normal for this to happen while
             // an executor is winding down.
             log_debug!(

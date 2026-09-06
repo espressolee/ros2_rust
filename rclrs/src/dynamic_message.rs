@@ -459,6 +459,8 @@ impl DynamicMessage {
     ///
     /// If the RMW-native message type does not match the underlying message type of this `DynamicMessage`,
     /// it is not converted but instead returned unchanged.
+    // Returning `Self` lets callers recover the original dynamic message without allocation.
+    #[allow(clippy::result_large_err)]
     pub fn convert_into_rmw_message<T>(mut self) -> Result<T, Self>
     where
         T: RmwMessage,

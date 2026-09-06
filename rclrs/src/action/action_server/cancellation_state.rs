@@ -261,13 +261,16 @@ impl<A: Action> CancellationRequestInner<A> {
 
         self.response_sent = true;
 
-        let mut response = CancelGoal_Response::default();
-        response.goals_canceling = std::mem::take(&mut self.accepted);
-        if response.goals_canceling.is_empty() {
-            response.return_code = CancelResponseCode::Reject as i8;
+        let goals_canceling = std::mem::take(&mut self.accepted);
+        let return_code = if goals_canceling.is_empty() {
+            CancelResponseCode::Reject as i8
         } else {
-            response.return_code = CancelResponseCode::Accept as i8;
-        }
+            CancelResponseCode::Accept as i8
+        };
+        let response = CancelGoal_Response {
+            return_code,
+            goals_canceling,
+        };
 
         let mut response_rmw =
             CancelGoal_Response::into_rmw_message(Cow::Owned(response)).into_owned();

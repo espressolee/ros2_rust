@@ -585,7 +585,7 @@ mod tests {
             // conditions can settle down.
             std::thread::sleep(std::time::Duration::from_millis(10));
 
-            let _ = commands.run(async move {
+            drop(commands.run(async move {
                 let (sender, mut receiver) = mpsc::unbounded();
                 let _subscription = node
                     .create_subscription("test_delayed_subscription", move |_: Empty| {
@@ -606,7 +606,7 @@ mod tests {
                         promise.send(()).unwrap();
                     }
                 }
-            });
+            }));
         });
 
         let r = executor.spin(

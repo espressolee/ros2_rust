@@ -41,7 +41,7 @@ pub use requested_goal_client::*;
 /// `ActionClientOptions` are used by [`Node::create_action_client`][1] to initialize an
 /// [`ActionClient`].
 ///
-/// [1]: crate::Node::create_action_client
+/// [1]: crate::NodeState::create_action_client
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct ActionClientOptions<'a> {
@@ -147,7 +147,7 @@ impl<'a> From<&'_ ActionClientOptions<'a>> for rcl_action_client_options_t {
 /// Receiving feedback and results requires the node's executor to [spin][2].
 ///
 /// [1]: crate::NodeState::create_action_client
-/// [2]: crate::spin
+/// [2]: crate::Executor::spin
 pub type ActionClient<A> = Arc<ActionClientState<A>>;
 
 /// The inner state of an [`ActionClient`].
@@ -384,7 +384,7 @@ struct ActionClientGoalBoard<A: Action> {
     status_senders: Mutex<HashMap<GoalUuid, Vec<UnboundedSender<GoalStatus>>>>,
     status_posters: Mutex<HashMap<GoalUuid, WatchSender<GoalStatus>>>,
     cancel_response_senders: Mutex<HashMap<i64, CancelResponseSender>>,
-    result_senders: Mutex<HashMap<i64, Sender<(GoalStatusCode, A::Result)>>>,
+    result_senders: Mutex<HashMap<i64, ActionResultSender<A>>>,
     handle: Arc<ActionClientHandle>,
     client: Mutex<Weak<ActionClientState<A>>>,
     /// Ensure the parent node remains alive as long as the subscription is held.
@@ -392,6 +392,8 @@ struct ActionClientGoalBoard<A: Action> {
     #[allow(unused)]
     node: Node,
 }
+
+type ActionResultSender<A> = Sender<(GoalStatusCode, <A as Action>::Result)>;
 
 enum CancelResponseSender {
     /// Used when only a single goal is being cancelled

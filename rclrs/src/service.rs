@@ -321,6 +321,7 @@ unsafe impl Send for rcl_service_t {}
 pub struct ServiceHandle {
     rcl_service: Mutex<rcl_service_t>,
     node_handle: Arc<NodeHandle>,
+    #[cfg_attr(ros_distro = "humble", allow(dead_code))]
     clock: Clock,
 }
 

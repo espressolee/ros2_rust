@@ -108,7 +108,7 @@ impl From<i8> for CancelResponseCode {
                 // SAFETY: We have already ensured that the integer value is
                 // within the acceptable range for the enum, so transmuting is
                 // safe.
-                return std::mem::transmute(value);
+                return std::mem::transmute::<i8, CancelResponseCode>(value);
             }
         }
 
@@ -210,7 +210,7 @@ impl From<i8> for GoalStatusCode {
                 // SAFETY: We have already ensured that the integer value is
                 // within the acceptable range for the enum, so transmuting is
                 // safe.
-                return std::mem::transmute(value);
+                return std::mem::transmute::<i8, GoalStatusCode>(value);
             }
         }
 
