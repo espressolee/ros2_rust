@@ -318,8 +318,8 @@ impl<A: Action> ActionServerState<A> {
 
         let handle = Arc::new(ActionServerHandle {
             rcl_action_server: Mutex::new(rcl_action_server),
-            node_handle: Arc::clone(&node.handle()),
-            clock: clock,
+            node_handle: Arc::clone(node.handle()),
+            clock,
             goals: Default::default(),
         });
 

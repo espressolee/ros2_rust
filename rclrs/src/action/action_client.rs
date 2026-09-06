@@ -348,7 +348,7 @@ impl<A: Action> ActionClientState<A> {
 
         let handle = Arc::new(ActionClientHandle {
             rcl_action_client: Mutex::new(rcl_action_client),
-            node_handle: Arc::clone(&node.handle()),
+            node_handle: Arc::clone(node.handle()),
         });
 
         let board = Arc::new(ActionClientGoalBoard {
@@ -580,7 +580,7 @@ impl<A: Action> ActionClientGoalBoard<A> {
     ) -> Result<RequestedGoalClient<A>, RclrsError> {
         let goal_id: GoalUuid = uuid::Uuid::new_v4().as_bytes().into();
         let goal_rmw = <A::Goal as Message>::into_rmw_message(Cow::Owned(goal)).into_owned();
-        let request = A::create_goal_request(&*goal_id, goal_rmw);
+        let request = A::create_goal_request(&goal_id, goal_rmw);
 
         let mut seq: i64 = 0;
         unsafe {
@@ -730,7 +730,7 @@ impl<A: Action> ActionClientGoalBoard<A> {
         client: ActionClient<A>,
         goal_id: GoalUuid,
     ) -> Result<ResultClient<A>, RclrsError> {
-        let request_rmw = A::create_result_request(&*goal_id);
+        let request_rmw = A::create_result_request(&goal_id);
         let mut seq: i64 = 0;
         unsafe {
             let handle = self.handle.lock();

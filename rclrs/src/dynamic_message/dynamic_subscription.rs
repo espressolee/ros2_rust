@@ -226,14 +226,14 @@ impl<Payload: 'static> RclPrimitive for DynamicSubscriptionExecutable<Payload> {
         self.callback
             .lock()
             .unwrap()
-            .execute(&self, payload, &self.commands)
+            .execute(self, payload, &self.commands)
     }
 
     fn kind(&self) -> RclPrimitiveKind {
         RclPrimitiveKind::Subscription
     }
 
-    fn handle(&self) -> RclPrimitiveHandle {
+    fn handle(&self) -> RclPrimitiveHandle<'_> {
         RclPrimitiveHandle::Subscription(self.handle.lock())
     }
 }

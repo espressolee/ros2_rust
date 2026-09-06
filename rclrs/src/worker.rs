@@ -615,7 +615,7 @@ impl<Payload: 'static + Send + Sync> WorkerState<Payload> {
         callback: AnyTimerCallback<Worker<Payload>>,
     ) -> Result<WorkerTimer<Payload>, RclrsError> {
         let options = options.into_timer_options();
-        let clock = options.clock.as_clock(&*self.node);
+        let clock = options.clock.as_clock(&self.node);
         let node = options.clock.is_node_time().then(|| Arc::clone(&self.node));
         TimerState::create(
             options.period,

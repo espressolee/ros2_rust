@@ -277,7 +277,7 @@ where
 {
     type Target = [T];
     fn deref(&self) -> &Self::Target {
-        &*self.elements
+        &self.elements
     }
 }
 
@@ -298,7 +298,7 @@ where
     ///
     /// [1]: rosidl_runtime_rs::Sequence::as_slice
     pub fn as_slice(&self) -> &[T] {
-        &*self.elements
+        &self.elements
     }
 }
 
@@ -308,7 +308,7 @@ impl<'msg, T> BooSlice<'msg, T> {
     fn as_slice(&self) -> &[T] {
         match self {
             BooSlice::Borrowed(slice) => slice,
-            BooSlice::Owned(boxed_slice) => &**boxed_slice,
+            BooSlice::Owned(boxed_slice) => boxed_slice,
         }
     }
 }

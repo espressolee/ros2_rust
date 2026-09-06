@@ -419,7 +419,7 @@ impl<'a> NodeOptions<'a> {
             parameter,
             logger: Logger::new(logger_name)?,
             graph_change_action,
-            commands: Arc::clone(&commands),
+            commands: Arc::clone(commands),
             handle,
         });
         node.time_source.attach_node(&node);
