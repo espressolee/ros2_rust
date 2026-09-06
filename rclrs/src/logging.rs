@@ -474,12 +474,22 @@ macro_rules! function {
 mod tests {
     use crate::{log_handler::*, test_helpers::*, *};
     use std::{
-        sync::{Arc, Mutex},
+        sync::{Arc, Mutex, MutexGuard, OnceLock},
         time::Duration,
     };
 
+    // These tests share the process-wide rcutils logging output handler.
+    fn logging_test_guard() -> MutexGuard<'static, ()> {
+        static LOGGING_TEST_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
+        LOGGING_TEST_MUTEX
+            .get_or_init(|| Mutex::new(()))
+            .lock()
+            .unwrap()
+    }
+
     #[test]
     fn test_logging_macros() -> Result<(), RclrsError> {
+        let _logging_test_guard = logging_test_guard();
         // This test ensures that strings which are being sent to the logger are
         // being sanitized correctly. Rust generally and our logging macro in
         // particular do not use C-style formatting strings, but rcutils expects
@@ -674,6 +684,8 @@ mod tests {
         use ros_env::rcl_interfaces::msg::rmw::Log;
         use std::sync::{Arc, Mutex};
 
+        let _logging_test_guard = logging_test_guard();
+
         let namespace = format!("/test_rosout_publishing_default_{}", line!());
         let mut executor = Context::default().create_basic_executor();
         let node = executor
@@ -799,6 +811,8 @@ mod tests {
             atomic::{AtomicBool, Ordering},
             Arc,
         };
+
+        let _logging_test_guard = logging_test_guard();
 
         let namespace = format!("/test_rosout_disabled_{}", line!());
         let mut executor = Context::default().create_basic_executor();
