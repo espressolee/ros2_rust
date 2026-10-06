@@ -264,6 +264,7 @@ impl BaseType {
 impl MessageFieldInfo {
     // That function must be unsafe, since it is possible to safely create a garbage non-null
     // pointer and store it in a rosidl_message_member_t.
+    #[cfg(any(ros_distro = "humble", ros_distro = "jazzy", ros_distro = "kilted"))]
     unsafe fn from(rosidl_message_member: &rosidl_message_member_t) -> Self {
         Self::from_parts(
             rosidl_message_member.name_,

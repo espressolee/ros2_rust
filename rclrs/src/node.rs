@@ -1365,9 +1365,8 @@ impl NodeState {
     /// # Example
     /// ```
     /// # use rclrs::*;
-    /// // Set default ROS domain ID to 10 here
-    /// unsafe { std::env::set_var("ROS_DOMAIN_ID", "10"); }
-    /// let executor = Context::default().create_basic_executor();
+    /// let context = Context::new([], InitOptions::new().with_domain_id(Some(10)))?;
+    /// let executor = context.create_basic_executor();
     /// let node = executor.create_node("domain_id_node")?;
     /// let domain_id = node.domain_id();
     /// assert_eq!(domain_id, 10);
