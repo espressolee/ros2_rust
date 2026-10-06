@@ -14,13 +14,10 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-defaults:
-  run:
-    shell: bash
-
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         ros_distribution:
           - humble
@@ -91,20 +88,6 @@ jobs:
         sudo pip3 install git+https://github.com/colcon/colcon-cargo.git
         sudo pip3 install git+https://github.com/colcon/colcon-ros-cargo.git
 
-    - name: Search Rust packages in this repository
-      id: list_repo_rust_packages
-      run: |
-        mapfile -t package_paths < <(colcon list | awk '$3 == "(ros.ament_cargo)" { print $2 }')
-        if (( ${#package_paths[@]} == 0 )); then
-          echo "::error::No ros.ament_cargo packages found in the repository"
-          exit 1
-        fi
-        {
-          echo 'package_paths<<EOF'
-          printf '%s\n' "${package_paths[@]}"
-          echo EOF
-        } >> "$GITHUB_OUTPUT"
-
     # test_msgs recently added ament_mypy as a test dependency, but rosdep
     # may fail to install it when building from source on rolling
     - name: Install ament_cmake_mypy for rolling
@@ -114,16 +97,22 @@ jobs:
         sudo apt-get install -y ros-rolling-ament-cmake-mypy
 
     - name: Check formatting of Rust packages
-      env:
-        PACKAGE_PATHS: ${{ steps.list_repo_rust_packages.outputs.package_paths }}
       run: |
+        package_table=$(colcon list)
+        package_paths=$(printf '%s\n' "$package_table" | awk '$3 == "(ros.ament_cargo)" { print $2 }')
+        if [ -z "$package_paths" ]; then
+          echo "::error::No target ros.ament_cargo packages found"
+          exit 1
+        fi
         rustup toolchain install nightly
         while IFS= read -r path; do
           [ -n "$path" ] || continue
           cd "$path"
           cargo +nightly fmt -- --check
           cd - > /dev/null
-        done <<< "$PACKAGE_PATHS"
+        done <<EOF
+        $package_paths
+        EOF
 
     - name: Build and test
       id: build
@@ -132,31 +121,29 @@ jobs:
         package-name: ${{ steps.list_packages.outputs.package_list }}
         target-ros2-distro: ${{ matrix.ros_distribution }}
         vcs-repo-file-url: ros2_rust_${{ matrix.ros_distribution }}.repos
+        # Keep the serde coverage previously provided by the separate cargo test loop.
+        colcon-defaults: |
+          {"test": {"cargo-args": ["--features", "serde"]}}
 
-    - name: Search target Rust packages in the built workspace
-      id: list_workspace_rust_packages
+    - name: Run clippy on Rust packages
       env:
         PACKAGE_NAMES: ${{ steps.list_packages.outputs.package_list }}
       run: |
         cd ${{ steps.build.outputs.ros-workspace-directory-name }}
-        mapfile -t package_names <<< "$PACKAGE_NAMES"
-        mapfile -t package_paths < <(colcon list --packages-select "${package_names[@]}" | awk '$3 == "(ros.ament_cargo)" { print $2 }')
-        if (( ${#package_paths[@]} == 0 )); then
-          echo "::error::No target ros.ament_cargo packages found in the built workspace"
+        . install/setup.sh
+        # Package names are whitespace-separated; disable pathname expansion.
+        set -f
+        if [ -z "$PACKAGE_NAMES" ]; then
+          echo "::error::Repository package names are empty"
           exit 1
         fi
-        {
-          echo 'package_paths<<EOF'
-          printf '%s\n' "${package_paths[@]}"
-          echo EOF
-        } >> "$GITHUB_OUTPUT"
-
-    - name: Run clippy on Rust packages
-      env:
-        PACKAGE_PATHS: ${{ steps.list_workspace_rust_packages.outputs.package_paths }}
-      run: |
-        cd ${{ steps.build.outputs.ros-workspace-directory-name }}
-        . install/setup.sh
+        # shellcheck disable=SC2086
+        package_table=$(colcon list --packages-select $PACKAGE_NAMES)
+        package_paths=$(printf '%s\n' "$package_table" | awk '$3 == "(ros.ament_cargo)" { print $2 }')
+        if [ -z "$package_paths" ]; then
+          echo "::error::No target ros.ament_cargo packages found"
+          exit 1
+        fi
         while IFS= read -r path; do
           [ -n "$path" ] || continue
           cd "$path"
@@ -168,18 +155,35 @@ jobs:
             cargo clippy --no-deps --all-targets --all-features -- -D warnings
           fi
           cd - > /dev/null
-        done <<< "$PACKAGE_PATHS"
+        done <<EOF
+        $package_paths
+        EOF
 
     - name: Rustdoc check
       env:
-        PACKAGE_PATHS: ${{ steps.list_workspace_rust_packages.outputs.package_paths }}
+        PACKAGE_NAMES: ${{ steps.list_packages.outputs.package_list }}
       run: |
         cd ${{ steps.build.outputs.ros-workspace-directory-name }}
         . install/setup.sh
+        # Package names are whitespace-separated; disable pathname expansion.
+        set -f
+        if [ -z "$PACKAGE_NAMES" ]; then
+          echo "::error::Repository package names are empty"
+          exit 1
+        fi
+        # shellcheck disable=SC2086
+        package_table=$(colcon list --packages-select $PACKAGE_NAMES)
+        package_paths=$(printf '%s\n' "$package_table" | awk '$3 == "(ros.ament_cargo)" { print $2 }')
+        if [ -z "$package_paths" ]; then
+          echo "::error::No target ros.ament_cargo packages found"
+          exit 1
+        fi
         while IFS= read -r path; do
           [ -n "$path" ] || continue
           cd "$path"
           echo "Running rustdoc check in $path"
           cargo rustdoc -- -D warnings
           cd - > /dev/null
-        done <<< "$PACKAGE_PATHS"
+        done <<EOF
+        $package_paths
+        EOF

@@ -113,7 +113,7 @@ without errors and see a line like this in the output:
 rclrs   src/ros2_rust/rclrs   (ros.ament_cargo)
 ```
 
-The build type `ament_cargo` means that the `colcon-ros-cargo` plugin works as expected.
+The `ros.ament_cargo` type means that the `colcon-ros-cargo` plugin works as expected.
 
 
 ## Building with `colcon`
