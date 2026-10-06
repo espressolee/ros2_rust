@@ -356,7 +356,9 @@ impl TaskSender {
             task_sender: self.task_sender.clone(),
         });
 
-        if self.task_sender.send(task).is_err() {
+        // Keep a failed send's resources alive while reporting the failure.
+        let send_result = self.task_sender.send(task);
+        if send_result.is_err() {
             // This is a debug log because it is normal for this to happen while
             // an executor is winding down.
             log_debug!(
@@ -364,6 +366,7 @@ impl TaskSender {
                 "Failed to send a task. This indicates the Worker has shut down.",
             );
         }
+        drop(send_result);
     }
 }
 
