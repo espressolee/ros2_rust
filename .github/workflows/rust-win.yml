@@ -101,7 +101,7 @@ jobs:
                 if /I "%%~nxB"=="rclrs" (
                   cargo test --locked -F default
                 ) else if /I "%%~nxB"=="rosidl_runtime_rs" (
-                  cargo test --locked -F default
+                  cargo test -F default
                 ) else (
                   cargo test --locked --all-features
                 )
