@@ -509,15 +509,27 @@ mod tests {
             .create_node(&format!("test_action_slow_cancel_{}", line!()))
             .unwrap();
         let action_name = format!("test_action_slow_cancel_{}_action", line!());
+        let (done_tx, done_rx) = tokio::sync::oneshot::channel();
+        let done_tx = std::sync::Mutex::new(Some(done_tx));
         let _action_server = node
-            .create_action_server(&action_name, |handle| {
+            .create_action_server(&action_name, move |handle| {
                 // This action server will intentionally reject 3 cancellation requests
-                fibonacci_action(
-                    handle,
-                    TestActionSettings::slow()
-                        .cancel_refusal(3)
-                        .continue_after_cancelling(),
-                )
+                let done_tx = done_tx
+                    .lock()
+                    .unwrap()
+                    .take()
+                    .expect("only one goal is requested");
+                async move {
+                    let terminated = fibonacci_action(
+                        handle,
+                        TestActionSettings::slow()
+                            .cancel_refusal(3)
+                            .continue_after_cancelling(),
+                    )
+                    .await;
+                    let _ = done_tx.send(());
+                    terminated
+                }
             })
             .unwrap();
 
@@ -547,6 +559,19 @@ mod tests {
 
             let very_late_cancellation = goal_client.cancellation.cancel().await;
             assert!(very_late_cancellation.is_accepted());
+
+            // The server keeps working after accepting cancellation. Keep the
+            // executor alive until its callback releases the live goal.
+            let (status, _) = async_std::future::timeout(Duration::from_secs(20), async {
+                let result = goal_client.result.await;
+                done_rx
+                    .await
+                    .expect("server callback completion sender was dropped");
+                result
+            })
+            .await
+            .expect("server callback did not finish");
+            assert_eq!(status, GoalStatusCode::Succeeded);
         });
 
         executor.spin(SpinOptions::default().until_promise_resolved(promise));
